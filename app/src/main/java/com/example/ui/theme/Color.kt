@@ -14,4 +14,3 @@ val PitchDarkLine = Color(0xFFCAC4D0)       // M3 outline/border color
 val LiveRed = Color(0xFFB3261E)            // Rich M3 alert crimson
 val LiveOrange = Color(0xFFBF5E00)         // Visible dark orange indicator
 val YellowCardColor = Color(0xFFBE9200)    // High density gold/yellow card text color
-

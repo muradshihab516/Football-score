@@ -1,257 +1,210 @@
 package com.example.ui.components
 
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.SportsSoccer
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.data.models.FootballMatch
-import com.example.ui.theme.PitchDarkLine
+import com.example.data.models.Match
+import com.example.ui.theme.LightGrey
+import com.example.ui.theme.MutedGrey
+import com.example.ui.theme.NeonLime
 import com.example.ui.theme.PitchGreen
 
 @Composable
 fun FootballPitchTracker(
-    match: FootballMatch,
-    ballX: Float,
-    ballY: Float,
-    phaseText: String,
+    match: Match,
     modifier: Modifier = Modifier
 ) {
-    // Smoothen ball movement animations via Jetpack Compose State Animators
-    val animatedBallX by animateFloatAsState(
-        targetValue = ballX,
-        animationSpec = tween(durationMillis = 600)
-    )
-    val animatedBallY by animateFloatAsState(
-        targetValue = ballY,
-        animationSpec = tween(durationMillis = 600)
-    )
-
     Column(
         modifier = modifier
-            .testTag("football_pitch_tracker")
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(16.dp))
-            .border(1.dp, PitchDarkLine, RoundedCornerShape(16.dp))
+            .clip(RoundedCornerShape(12.dp))
+            .background(MaterialTheme.colorScheme.surface)
+            .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.4f), RoundedCornerShape(12.dp))
             .padding(12.dp)
+            .testTag("pitch_tracker_container"),
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Tracker Title bar
         Row(
             modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Column {
+            Column(horizontalAlignment = Alignment.Start) {
                 Text(
-                    text = "LIVE TACTICAL STREAM",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = PitchGreen,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 1.2.sp
+                    text = match.homeTeam.name.uppercase(),
+                    style = MaterialTheme.typography.titleSmall,
+                    color = LightGrey,
+                    fontWeight = FontWeight.Bold
                 )
                 Text(
-                    text = phaseText,
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onSurface
+                    text = "Formation: ${match.formationHome}",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MutedGrey
                 )
             }
-            Icon(
-                imageVector = Icons.Default.SportsSoccer,
-                contentDescription = "Soccer live icon",
-                tint = PitchGreen,
-                modifier = Modifier.size(20.dp)
+            Text(
+                text = "VS",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Black,
+                color = PitchGreen
             )
+            Column(horizontalAlignment = Alignment.End) {
+                Text(
+                    text = match.awayTeam.name.uppercase(),
+                    style = MaterialTheme.typography.titleSmall,
+                    color = LightGrey,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = "Formation: ${match.formationAway}",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MutedGrey
+                )
+            }
         }
 
-        // Draw Interactive 2D Pitch Field
+        // The Tactical Football Field Canvas
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(180.dp)
-                .background(
-                    brush = Brush.verticalGradient(
-                        colors = listOf(
-                            Color(0xFF07140D),
-                            Color(0xFF0F2618)
-                        )
-                    ),
-                    shape = RoundedCornerShape(10.dp)
-                )
-                .border(1.dp, Color(0xFF225235), RoundedCornerShape(10.dp)),
-            contentAlignment = Alignment.Center
+                .clip(RoundedCornerShape(8.dp))
+                .background(Color(0xFF2E6B3E))
         ) {
-            // Draw field markings via custom Canvas Drawing APIs
             Canvas(modifier = Modifier.fillMaxSize()) {
                 val w = size.width
                 val h = size.height
-                val lineColor = Color(0x3500FF66)
-                val lineStroke = 1.dp.toPx()
 
-                // 1. Boundary lines
+                // Pitch outer perimeter line
                 drawRect(
-                    color = lineColor,
-                    topLeft = Offset(10.dp.toPx(), 10.dp.toPx()),
-                    size = Size(w - 20.dp.toPx(), h - 20.dp.toPx()),
-                    style = Stroke(width = lineStroke)
+                    color = Color.White.copy(alpha = 0.3f),
+                    topLeft = Offset(8.dp.toPx(), 8.dp.toPx()),
+                    size = androidx.compose.ui.geometry.Size(w - 16.dp.toPx(), h - 16.dp.toPx()),
+                    style = Stroke(width = 1.5.dp.toPx())
                 )
 
-                // 2. Midfield Line
+                // Halfway line
                 drawLine(
-                    color = lineColor,
-                    start = Offset(w / 2, 10.dp.toPx()),
-                    end = Offset(w / 2, h - 10.dp.toPx()),
-                    strokeWidth = lineStroke
+                    color = Color.White.copy(alpha = 0.3f),
+                    start = Offset(w / 2, 8.dp.toPx()),
+                    end = Offset(w / 2, h - 8.dp.toPx()),
+                    strokeWidth = 1.5.dp.toPx()
                 )
 
-                // 3. Center Circle
+                // Center circle
                 drawCircle(
-                    color = lineColor,
-                    radius = 32.dp.toPx(),
+                    color = Color.White.copy(alpha = 0.3f),
+                    radius = 28.dp.toPx(),
                     center = Offset(w / 2, h / 2),
-                    style = Stroke(width = lineStroke)
-                )
-                drawCircle(
-                    color = lineColor,
-                    radius = 2.dp.toPx(),
-                    center = Offset(w / 2, h / 2)
+                    style = Stroke(width = 1.5.dp.toPx())
                 )
 
-                // 4. Left Penalty Box
+                // Goal Area Left
                 drawRect(
-                    color = lineColor,
-                    topLeft = Offset(10.dp.toPx(), h / 2 - 40.dp.toPx()),
-                    size = Size(40.dp.toPx(), 80.dp.toPx()),
-                    style = Stroke(width = lineStroke)
+                    color = Color.White.copy(alpha = 0.3f),
+                    topLeft = Offset(8.dp.toPx(), h / 3),
+                    size = androidx.compose.ui.geometry.Size(25.dp.toPx(), h / 3),
+                    style = Stroke(width = 1.5.dp.toPx())
                 )
-                // Left Goal area box
+
+                // Goal Area Right
                 drawRect(
-                    color = lineColor,
-                    topLeft = Offset(10.dp.toPx(), h / 2 - 18.dp.toPx()),
-                    size = Size(14.dp.toPx(), 36.dp.toPx()),
-                    style = Stroke(width = lineStroke)
+                    color = Color.White.copy(alpha = 0.3f),
+                    topLeft = Offset(w - 8.dp.toPx() - 25.dp.toPx(), h / 3),
+                    size = androidx.compose.ui.geometry.Size(25.dp.toPx(), h / 3),
+                    style = Stroke(width = 1.5.dp.toPx())
                 )
 
-                // 5. Right Penalty Box
-                drawRect(
-                    color = lineColor,
-                    topLeft = Offset(w - 50.dp.toPx(), h / 2 - 40.dp.toPx()),
-                    size = Size(40.dp.toPx(), 80.dp.toPx()),
-                    style = Stroke(width = lineStroke)
+                // Simulated Tactical Formations Nodes (4-3-3 Left VS 4-2-3-1 Right)
+                // Left side: Home Team (Blue nodes)
+                val blueTeam = Color(0xFF1E88E5)
+                // GK
+                drawCircle(blueTeam, 6.dp.toPx(), Offset(25.dp.toPx(), h / 2))
+                // Defenders
+                drawCircle(blueTeam, 6.dp.toPx(), Offset(50.dp.toPx(), h * 0.2f))
+                drawCircle(blueTeam, 6.dp.toPx(), Offset(50.dp.toPx(), h * 0.4f))
+                drawCircle(blueTeam, 6.dp.toPx(), Offset(50.dp.toPx(), h * 0.6f))
+                drawCircle(blueTeam, 6.dp.toPx(), Offset(50.dp.toPx(), h * 0.8f))
+                // Midfielders
+                drawCircle(blueTeam, 6.dp.toPx(), Offset(90.dp.toPx(), h * 0.3f))
+                drawCircle(blueTeam, 6.dp.toPx(), Offset(80.dp.toPx(), h * 0.5f))
+                drawCircle(blueTeam, 6.dp.toPx(), Offset(90.dp.toPx(), h * 0.7f))
+                // Attackers
+                drawCircle(blueTeam, 6.dp.toPx(), Offset(130.dp.toPx(), h * 0.25f))
+                drawCircle(blueTeam, 6.dp.toPx(), Offset(140.dp.toPx(), h * 0.5f)) // CF
+                drawCircle(blueTeam, 6.dp.toPx(), Offset(130.dp.toPx(), h * 0.75f))
+
+                // Right side: Away Team (Red/Purple nodes)
+                val orangeTeam = Color(0xFFF4511E)
+                // GK
+                drawCircle(orangeTeam, 6.dp.toPx(), Offset(w - 25.dp.toPx(), h / 2))
+                // Defenders
+                drawCircle(orangeTeam, 6.dp.toPx(), Offset(w - 50.dp.toPx(), h * 0.2f))
+                drawCircle(orangeTeam, 6.dp.toPx(), Offset(w - 55.dp.toPx(), h * 0.4f))
+                drawCircle(orangeTeam, 6.dp.toPx(), Offset(w - 55.dp.toPx(), h * 0.6f))
+                drawCircle(orangeTeam, 6.dp.toPx(), Offset(w - 50.dp.toPx(), h * 0.8f))
+                // Defensive Midfielders (2)
+                drawCircle(orangeTeam, 6.dp.toPx(), Offset(w - 90.dp.toPx(), h * 0.35f))
+                drawCircle(orangeTeam, 6.dp.toPx(), Offset(w - 90.dp.toPx(), h * 0.65f))
+                // Attacking Midfielders (3)
+                drawCircle(orangeTeam, 6.dp.toPx(), Offset(w - 125.dp.toPx(), h * 0.25f))
+                drawCircle(orangeTeam, 6.dp.toPx(), Offset(w - 120.dp.toPx(), h * 0.5f)) // CAM
+                drawCircle(orangeTeam, 6.dp.toPx(), Offset(w - 125.dp.toPx(), h * 0.75f))
+                // Striker (1)
+                drawCircle(orangeTeam, 6.dp.toPx(), Offset(w - 150.dp.toPx(), h * 0.5f))
+
+                // Draw tactical arrows of pressing or runs
+                drawLine(
+                    color = Color.White.copy(alpha = 0.5f),
+                    start = Offset(w - 120.dp.toPx(), h * 0.5f),
+                    end = Offset(w - 138.dp.toPx(), h * 0.5f),
+                    strokeWidth = 1.dp.toPx(),
+                    pathEffect = PathEffect.dashPathEffect(floatArrayOf(5f, 5f), 0f)
                 )
-                // Right Goal area box
-                drawRect(
-                    color = lineColor,
-                    topLeft = Offset(w - 24.dp.toPx(), h / 2 - 18.dp.toPx()),
-                    size = Size(14.dp.toPx(), 36.dp.toPx()),
-                    style = Stroke(width = lineStroke)
+                drawLine(
+                    color = Color.White.copy(alpha = 0.5f),
+                    start = Offset(140.dp.toPx(), h * 0.5f),
+                    end = Offset(165.dp.toPx(), h * 0.5f),
+                    strokeWidth = 1.dp.toPx(),
+                    pathEffect = PathEffect.dashPathEffect(floatArrayOf(5f, 5f), 0f)
                 )
-            }
-
-            // Draw Home Team Core Formations representation overlay dots (Left/Right depending on attacking side)
-            // Draw Animated glowing Football tracking node
-            Box(
-                modifier = Modifier.fillMaxSize()
-            ) {
-                // Ball Position
-                BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
-                    val widthPx = maxWidth
-                    val heightPx = maxHeight
-
-                    // Place team indicator labels
-                    Text(
-                        text = match.homeTeam.shortName,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = Color(android.graphics.Color.parseColor(match.homeTeam.primaryColorHex)),
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier
-                            .align(Alignment.CenterStart)
-                            .padding(start = 24.dp)
-                    )
-
-                    Text(
-                        text = match.awayTeam.shortName,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = Color(android.graphics.Color.parseColor(match.awayTeam.primaryColorHex)),
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier
-                            .align(Alignment.CenterEnd)
-                            .padding(end = 24.dp)
-                    )
-
-                    // Draw the animated soccer ball node and halo ring
-                    val ballOffsetOffsetX = (animatedBallX * (widthPx.value - 40f)).dp
-                    val ballOffsetOffsetY = (animatedBallY * (heightPx.value - 40f)).dp
-
-                    Box(
-                        modifier = Modifier
-                            .offset(x = ballOffsetOffsetX + 20.dp, y = ballOffsetOffsetY + 20.dp)
-                            .size(16.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        // Pulsing outer flare ring
-                        Surface(
-                            modifier = Modifier.fillMaxSize(),
-                            shape = RoundedCornerShape(10.dp),
-                            color = PitchGreen.copy(alpha = 0.35f),
-                            content = {}
-                        )
-                        // Soccer core dot
-                        Box(
-                            modifier = Modifier
-                                .size(8.dp)
-                                .background(Color.White, RoundedCornerShape(4.dp))
-                        )
-                    }
-                }
             }
         }
 
-        // Live stats ticker bar right on field base
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // Position indicators legend
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 10.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceEvenly
         ) {
-            Text(
-                text = "${match.homeTeam.name} possession: ${match.stats.possessionHome}%",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Text(
-                text = "Shots: ${match.stats.shotsHome} - ${match.stats.shotsAway}",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                fontWeight = FontWeight.Bold
-            )
-            Text(
-                text = "${match.awayTeam.name}: ${match.stats.possessionAway}%",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(modifier = Modifier.size(8.dp).background(Color(0xFF1E88E5), CircleShape))
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(text = "Home Position Nodes", fontSize = 10.sp, color = MutedGrey)
+            }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(modifier = Modifier.size(8.dp).background(Color(0xFFF4511E), CircleShape))
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(text = "Away Position Nodes", fontSize = 10.sp, color = MutedGrey)
+            }
         }
     }
 }

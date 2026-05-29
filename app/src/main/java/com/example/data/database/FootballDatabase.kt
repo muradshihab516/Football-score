@@ -1,78 +1,77 @@
 package com.example.data.database
 
 import android.content.Context
-import androidx.room.*
+import androidx.room.Dao
+import androidx.room.Database
+import androidx.room.Insert
+import androidx.room.OnConflictStrategy
+import androidx.room.Query
+import androidx.room.Room
+import androidx.room.RoomDatabase
+import com.example.data.models.Match
+import com.example.data.models.StandingItem
+import com.example.data.models.NewsArticle
+import com.example.data.models.ChatMessage
 import kotlinx.coroutines.flow.Flow
-
-// --- Room Entities ---
-
-@Entity(tableName = "bookmarked_matches")
-data class BookmarkedMatchEntity(
-    @PrimaryKey val matchId: String,
-    val homeTeamName: String,
-    val awayTeamName: String,
-    val timestamp: Long = System.currentTimeMillis()
-)
-
-@Entity(tableName = "fan_chats")
-data class FanChatMessageEntity(
-    @PrimaryKey(autoGenerate = true) val id: Int = 0,
-    val matchId: String,
-    val user: String,
-    val message: String,
-    val timestamp: Long = System.currentTimeMillis(),
-    val isAi: Boolean = false,
-    val avatarColorHex: String = "#00FF66"
-)
-
-// --- DAO Definitions ---
 
 @Dao
 interface FootballDao {
-    // Bookmarks
-    @Query("SELECT * FROM bookmarked_matches ORDER BY timestamp DESC")
-    fun getBookmarkedMatches(): Flow<List<BookmarkedMatchEntity>>
+    // Matches
+    @Query("SELECT * FROM matches")
+    fun getAllMatchesFlow(): Flow<List<Match>>
+
+    @Query("SELECT * FROM matches")
+    suspend fun getAllMatches(): List<Match>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun addBookmark(bookmark: BookmarkedMatchEntity)
+    suspend fun insertMatches(matches: List<Match>)
 
-    @Query("DELETE FROM bookmarked_matches WHERE matchId = :matchId")
-    suspend fun removeBookmark(matchId: String)
-
-    @Query("SELECT EXISTS(SELECT 1 FROM bookmarked_matches WHERE matchId = :matchId)")
-    suspend fun isBookmarked(matchId: String): Boolean
-
-    // Fan Chats
-    @Query("SELECT * FROM fan_chats WHERE matchId = :matchId ORDER BY timestamp ASC")
-    fun getChatsForMatch(matchId: String): Flow<List<FanChatMessageEntity>>
+    // Standings
+    @Query("SELECT * FROM standings ORDER BY position ASC")
+    fun getStandingsFlow(): Flow<List<StandingItem>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertChatMessage(message: FanChatMessageEntity)
+    suspend fun insertStandings(standings: List<StandingItem>)
 
-    @Query("DELETE FROM fan_chats WHERE matchId = :matchId")
-    suspend fun clearChatsForMatch(matchId: String)
+    // News
+    @Query("SELECT * FROM news_articles")
+    fun getNewsFlow(): Flow<List<NewsArticle>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertNews(news: List<NewsArticle>)
+
+    // Chat
+    @Query("SELECT * FROM chat_messages ORDER BY timestamp ASC")
+    fun getChatMessagesFlow(): Flow<List<ChatMessage>>
+
+    @Query("SELECT * FROM chat_messages ORDER BY timestamp ASC")
+    suspend fun getChatMessages(): List<ChatMessage>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertChatMessage(message: ChatMessage)
+
+    @Query("DELETE FROM chat_messages")
+    suspend fun clearChat()
 }
 
-// --- App Database Holder ---
-
 @Database(
-    entities = [BookmarkedMatchEntity::class, FanChatMessageEntity::class],
+    entities = [Match::class, StandingItem::class, NewsArticle::class, ChatMessage::class],
     version = 1,
     exportSchema = false
 )
-abstract class AppDatabase : RoomDatabase() {
+abstract class FootballDatabase : RoomDatabase() {
     abstract fun footballDao(): FootballDao
 
     companion object {
         @Volatile
-        private var INSTANCE: AppDatabase? = null
+        private var INSTANCE: FootballDatabase? = null
 
-        fun getDatabase(context: Context): AppDatabase {
+        fun getDatabase(context: Context): FootballDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
                     context.applicationContext,
-                    AppDatabase::class.java,
-                    "football_score_database"
+                    FootballDatabase::class.java,
+                    "football_database"
                 )
                 .fallbackToDestructiveMigration()
                 .build()
@@ -80,39 +79,5 @@ abstract class AppDatabase : RoomDatabase() {
                 instance
             }
         }
-    }
-}
-
-// --- Repository Pattern Implementation ---
-
-class FootballRepository(private val dao: FootballDao) {
-    val bookmarkedMatches: Flow<List<BookmarkedMatchEntity>> = dao.getBookmarkedMatches()
-
-    suspend fun addBookmark(matchId: String, home: String, away: String) {
-        dao.addBookmark(BookmarkedMatchEntity(matchId, home, away))
-    }
-
-    suspend fun removeBookmark(matchId: String) {
-        dao.removeBookmark(matchId)
-    }
-
-    suspend fun isBookmarked(matchId: String): Boolean {
-        return dao.isBookmarked(matchId)
-    }
-
-    fun getChats(matchId: String): Flow<List<FanChatMessageEntity>> {
-        return dao.getChatsForMatch(matchId)
-    }
-
-    suspend fun saveChatMessage(matchId: String, user: String, message: String, isAi: Boolean, avatarColor: String) {
-        dao.insertChatMessage(
-            FanChatMessageEntity(
-                matchId = matchId,
-                user = user,
-                message = message,
-                isAi = isAi,
-                avatarColorHex = avatarColor
-            )
-        )
     }
 }

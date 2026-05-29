@@ -1,39 +1,14 @@
 package com.example.data.models
 
-import com.squareup.moshi.JsonClass
+import androidx.room.Entity
+import androidx.room.PrimaryKey
 
-@JsonClass(generateAdapter = true)
 data class Team(
     val id: String,
     val name: String,
-    val shortName: String,
-    val logoAsset: String, // String representation or placeholder color hex
-    val primaryColorHex: String
+    val logoUrl: String = ""
 )
 
-@JsonClass(generateAdapter = true)
-data class MatchEvent(
-    val id: String,
-    val minute: Int,
-    val type: EventType,
-    val teamId: String,
-    val playerName: String,
-    val secondaryPlayerName: String? = null, // Assist or player coming out
-    val details: String = ""
-)
-
-enum class EventType {
-    GOAL,
-    YELLOW_CARD,
-    RED_CARD,
-    SUBSTITUTION,
-    PENALTY_GOAL,
-    CORNER,
-    SHOT_ON_TARGET,
-    FOUL
-}
-
-@JsonClass(generateAdapter = true)
 data class MatchStats(
     val possessionHome: Int = 50,
     val possessionAway: Int = 50,
@@ -41,80 +16,93 @@ data class MatchStats(
     val shotsAway: Int = 0,
     val shotsOnTargetHome: Int = 0,
     val shotsOnTargetAway: Int = 0,
-    val foulsHome: Int = 0,
-    val foulsAway: Int = 0,
     val cornersHome: Int = 0,
     val cornersAway: Int = 0,
-    val offsidesHome: Int = 0,
-    val offsidesAway: Int = 0,
+    val foulsHome: Int = 0,
+    val foulsAway: Int = 0,
     val yellowCardsHome: Int = 0,
     val yellowCardsAway: Int = 0,
     val redCardsHome: Int = 0,
     val redCardsAway: Int = 0
 )
 
-@JsonClass(generateAdapter = true)
-data class PlayerPosition(
-    val name: String,
-    val number: Int,
-    val role: String, // "GK", "DF", "MF", "FW"
-    val xGrid: Float, // For tactical line-up visual coordinates (0-1)
-    val yGrid: Float
-)
+@Entity(tableName = "matches")
+data class Match(
+    @PrimaryKey val id: String,
+    val homeTeamName: String,
+    val awayTeamName: String,
+    val homeScore: Int,
+    val awayScore: Int,
+    val status: String, // "LIVE", "FT", "SCHEDULED"
+    val timeMinutes: Int,
+    val possessionHome: Int = 50,
+    val possessionAway: Int = 50,
+    val shotsHome: Int = 12,
+    val shotsAway: Int = 8,
+    val shotsOnTargetHome: Int = 5,
+    val shotsOnTargetAway: Int = 3,
+    val cornersHome: Int = 4,
+    val cornersAway: Int = 2,
+    val foulsHome: Int = 9,
+    val foulsAway: Int = 11,
+    val yellowCardsHome: Int = 1,
+    val yellowCardsAway: Int = 2,
+    val redCardsHome: Int = 0,
+    val redCardsAway: Int = 0,
+    val formationHome: String = "4-3-3",
+    val formationAway: String = "4-2-3-1"
+) {
+    val homeTeam: Team get() = Team(homeTeamName.lowercase().replace(" ", ""), homeTeamName)
+    val awayTeam: Team get() = Team(awayTeamName.lowercase().replace(" ", ""), awayTeamName)
+    val stats: MatchStats get() = MatchStats(
+        possessionHome = possessionHome,
+        possessionAway = possessionAway,
+        shotsHome = shotsHome,
+        shotsAway = shotsAway,
+        shotsOnTargetHome = shotsOnTargetHome,
+        shotsOnTargetAway = shotsOnTargetAway,
+        cornersHome = cornersHome,
+        cornersAway = cornersAway,
+        foulsHome = foulsHome,
+        foulsAway = foulsAway,
+        yellowCardsHome = yellowCardsHome,
+        yellowCardsAway = yellowCardsAway,
+        redCardsHome = redCardsHome,
+        redCardsAway = redCardsAway
+    )
+}
 
-@JsonClass(generateAdapter = true)
-data class Lineups(
-    val homeLineup: List<PlayerPosition>,
-    val awayLineup: List<PlayerPosition>
-)
-
-@JsonClass(generateAdapter = true)
-data class CommentaryItem(
-    val id: String,
-    val minute: Int,
-    val text: String,
-    val isCritical: Boolean = false, // True for goals, cards, etc.
-    val type: EventType? = null
-)
-
-@JsonClass(generateAdapter = true)
-data class FootballMatch(
-    val id: String,
-    val league: String,
-    val homeTeam: Team,
-    val awayTeam: Team,
-    var homeScore: Int,
-    var awayScore: Int,
-    var status: String, // "LIVE", "FT", "UPCOMING", "HT"
-    var minute: Int,
-    val events: MutableList<MatchEvent> = mutableListOf(),
-    var stats: MatchStats = MatchStats(),
-    val lineups: Lineups,
-    val commentary: MutableList<CommentaryItem> = mutableListOf(),
-    val videoStreamUrl: String = "simulated_stream_uid_01",
-    var isBookmarked: Boolean = false
-)
-
-@JsonClass(generateAdapter = true)
-data class StandingEntry(
-    val rank: Int,
-    val team: Team,
+@Entity(tableName = "standings")
+data class StandingItem(
+    @PrimaryKey val position: Int,
+    val teamName: String,
     val played: Int,
     val won: Int,
     val drawn: Int,
     val lost: Int,
+    val points: Int,
     val goalsFor: Int,
-    val goalsAgainst: Int,
-    val points: Int
+    val goalsAgainst: Int
+) {
+    val team: Team get() = Team(teamName.lowercase().replace(" ", ""), teamName)
+    val goalDifference: Int get() = goalsFor - goalsAgainst
+}
+
+@Entity(tableName = "news_articles")
+data class NewsArticle(
+    @PrimaryKey val id: String,
+    val title: String,
+    val content: String,
+    val summary: String,
+    val source: String,
+    val date: String,
+    val imageUrl: String = ""
 )
 
-@JsonClass(generateAdapter = true)
-data class SoccerNews(
-    val id: String,
-    val title: String,
-    val category: String, // "Transfer", "Match Report", "Injury"
-    val timeAgo: String,
-    val content: String,
-    val author: String,
-    val bannerColorHex: String
+@Entity(tableName = "chat_messages")
+data class ChatMessage(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val message: String,
+    val isAi: Boolean,
+    val timestamp: Long = System.currentTimeMillis()
 )
