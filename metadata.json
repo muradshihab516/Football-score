@@ -1,0 +1,6 @@
+{
+  "name": "Football Live",
+  "description": "Premium live score, match visualizer tracker, and AI-powered soccer analysis app.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
